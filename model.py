@@ -90,7 +90,7 @@ def train(model,X,Y,lr,epochs,batch_size,ntest_sers, verbose=True):
     
     # Optimize & Compilation.
     Nadam = keras.optimizers.Nadam(lr = lr , beta_1=0.9, beta_2=0.999, epsilon=1e-08)#, schedule_decay=0.0004)
-    model.compile(loss='categorical_crossentropy', optimizer= Nadam , metrics = [top_k_categorical_accuracy])
+    model.compile(loss='categorical_crossentropy', optimizer= Nadam , metrics = ['accuracy',top_k_categorical_accuracy])
     
     # We fit the model.
     filepath="weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
