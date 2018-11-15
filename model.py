@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov 14 14:42:03 2018
 
-@author: ebnou
-"""
 import keras
 from keras.models import Sequential , load_model , Model
 from keras.layers import Dense , LSTM, Dropout , Conv1D , MaxPooling1D , Input, Reshape , Masking , TimeDistributed

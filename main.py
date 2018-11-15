@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 15 00:35:11 2018
 
-@author: ebnou
-"""
 
 """
 PARAMETERS:
