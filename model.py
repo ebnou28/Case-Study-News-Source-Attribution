@@ -20,6 +20,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error , precision_score , accuracy_score
 from sklearn.metrics import recall_score , confusion_matrix, roc_curve, auc
 
+from keras.metrics import top_k_categorical_accuracy
+
 """
 PARAMETERS:
 X : Features Matrix 
@@ -44,64 +46,59 @@ Training parameters:
 Verbose : Wether or not print the summary.
 """
     
-cnn_layers = [32 , 64 , 128]
-cnn_kernels = [3 , 3 , 3]
-cnn_dropout = [.5 , .5 , .5]
-lstm_layers = [128] 
-lstm_dropout = [.5]
-vector_size = 128
-lr = 0.001
-epochs = 20
-batch_size = 64
-ntest_sers = 1000
-verbose = True
+
     
+def model(X,Y,cnn_layers,cnn_kernels,cnn_dropout,lstm_layers,lstm_dropout,vector_size):
+    ######### Model :    
+    inp = Input(shape = (X.shape[1],X.shape[2]))
+    
+    
+    # Convolutional Part
+    
+    x1 = inp
+    # We apply the convolutional Filters.
+    for i in range(len(cnn_layers)):
+        x1 = Conv1D(cnn_layers[i] , cnn_kernels[i], padding = 'same')(x1)
+        x1 = BatchNormalization()(x1)
+        x1 = Activation('relu')(x1)
+        x1 = Dropout(cnn_dropout[0])(x1)
+    # Global Pooling.
+    x1 = GlobalMaxPooling1D()(x1)
+    
+    
+    
+    
+    # BI lSTM part :
+    x2 = Bidirectional( LSTM(lstm_layers[0] , return_sequences = False))(inp)
+    x2 = Dropout(lstm_dropout[0])(x2)
+    
+    # Concatenation:
+    x = Concatenate(axis = -1)([x1 , x2])
+    
+    # Dense layer : Feature Vector.
+    x = Dense(vector_size , activation = 'relu')(x)
+    
+    # Output 
+    x = Dense(Y.shape[1] , activation = 'softmax')(x)
+    
+    model = Model(inputs=inp, outputs=x)
+    
+    return model
 
-######### Modèle :    
-inp = Input(shape = (X.shape[1],X.shape[2]))
+def train(model,X,Y,lr,epochs,batch_size,ntest_sers, verbose=True):
 
-
-# Convolutional Part
-
-x1 = inp
-# We apply the convolutional Filters.
-for i in range(len(cnn_layers)):
-    x1 = Conv1D(cnn_layers[i] , cnn_kernels[i], padding = 'same')(x1)
-    x1 = BatchNormalization()(x1)
-    x1 = Activation('relu')(x1)
-    x1 = Dropout(cnn_dropout[0])(x1)
-# Global Pooling.
-x1 = GlobalMaxPooling1D()(x1)
-
-
-
-
-# BI lSTM part :
-x2 = Bidirectional( LSTM(lstm_layers[0] , return_sequences = False))(inp)
-x2 = Dropout(lstm_dropout[0])(x2)
-
-# Concatenation:
-x = Concatenate(axis = -1)([x1 , x2])
-
-# Dense layer : Feature Vector.
-x = Dense(vector_size , activation = 'relu')(x)
-
-# Output 
-x = Dense(Y.shape[1] , activation = 'softmax')(x)
-
-model = Model(inputs=inp, outputs=x)
-
-#####################
-
-# Model Summary
-if verbose : print(model.summary())
-
-# Optimize & Compilation.
-Nadam = keras.optimizers.Nadam(lr = lr , beta_1=0.9, beta_2=0.999, epsilon=1e-08)#, schedule_decay=0.0004)
-model.compile(loss='categorical_crossentropy', optimizer= Nadam , metrics = ['accuracy'])
-
-# We fit the model.
-checkpoint = ModelCheckpoint('model' , save_best_only=True) # Save the best model.
-
-model.fit(X, Y, epochs= epochs, batch_size=batch_size, validation_split = ntest_sers/X.shape[0] 
-          , callbacks = [checkpoint])
+    #####################
+    
+    # Model Summary
+    if verbose : print(model.summary())
+    
+    # Optimize & Compilation.
+    Nadam = keras.optimizers.Nadam(lr = lr , beta_1=0.9, beta_2=0.999, epsilon=1e-08)#, schedule_decay=0.0004)
+    model.compile(loss='categorical_crossentropy', optimizer= Nadam , metrics = [top_k_categorical_accuracy])
+    
+    # We fit the model.
+    filepath="weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True)
+    
+    model.fit(X, Y, epochs= epochs, batch_size=batch_size, validation_split = ntest_sers/X.shape[0] 
+              , callbacks = [checkpoint])
